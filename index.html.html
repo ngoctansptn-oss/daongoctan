@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xếp hạng Giải cờ vua</title>
+<style>
+  html, body { height: 100%; margin: 0; background: #0b1512; }
+  /* Khung phủ kín trang; chỉnh height nếu muốn chừa chỗ cho phần đầu/cuối website */
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+  #wait { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box;
+          background: #0b1512; color: #e8efe9; text-align: center; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  #wait[hidden], iframe[hidden] { display: none; }
+  #wait .box { max-width: 420px; }
+  #wait .ico { font-size: 56px; line-height: 1; }
+  #wait h1 { font-size: 24px; margin: 16px 0 10px; }
+  #wait p { font-size: 16px; line-height: 1.6; color: #a9bbb2; margin: 0; }
+</style>
+</head>
+<body>
+  <div id="wait" hidden>
+    <div class="box">
+      <div class="ico">⏳</div>
+      <h1>Vui lòng chờ một chút</h1>
+      <p>Bạn vừa tải trang cách đây chưa đến 1 phút. Để web không bị quá tải khi đông người xem, trang sẽ tự mở sau <b id="sec">60</b> giây.
+         Lần sau hãy dùng nút “Tải lại” trong trang thay cho F5.</p>
+    </div>
+  </div>
+
+  <!-- Thay DUONG_DAN_EXEC bằng đường dẫn triển khai của thầy (kết thúc bằng /exec, KHÔNG dùng /dev).
+       Khung chỉ được nạp SAU khi qua bước chờ bên dưới, nên lượt F5 bị chặn không tốn lượt chạy nào của Apps Script. -->
+  <iframe id="app" hidden title="Xếp hạng Giải cờ vua" allow="fullscreen; clipboard-write" allowfullscreen></iframe>
+
+<script>
+(function () {
+  var APP_URL = 'https://script.google.com/macros/s/AKfycbx7mjE7Se5650ovkZSmobK2jUQMGYD33fekMjcMLgJWP1s_g3Aw_ciSRPQkU28WZ4_l/exec';      // <-- thay bằng đường dẫn /exec của thầy
+  var GAP = 60000;                     // 60 giây giữa hai lần tải lại cả trang
+  var KEY = 'cc_host_next_ok';
+  var frame = document.getElementById('app'), wait = document.getElementById('wait'), secEl = document.getElementById('sec');
+  function stamp(t) { try { localStorage.setItem(KEY, String(t)); } catch (e) {} }
+  function openApp() { wait.hidden = true; frame.hidden = false; frame.src = APP_URL; stamp(Date.now() + GAP); }
+  function showWait(until) {
+    wait.hidden = false;
+    var timer = setInterval(function () {
+      var left = Math.ceil((until - Date.now()) / 1000);
+      if (left > 0) { secEl.textContent = left; return; }
+      clearInterval(timer); openApp();
+    }, 500);
+    secEl.textContent = Math.ceil((until - Date.now()) / 1000);
+  }
+  // Nút "Tải lại" trong web gửi mốc giờ lên đây để F5 ngay sau đó cũng phải chờ
+  window.addEventListener('message', function (e) {
+    var d = e.data;
+    if (d && typeof d.ccStamp === 'number' && isFinite(d.ccStamp)) stamp(Math.min(d.ccStamp, Date.now() + GAP + 5000));
+  });
+  var until = 0;
+  try { until = Number(localStorage.getItem(KEY)) || 0; } catch (e) {}   // trình duyệt chặn lưu trữ thì cho vào bình thường
+  var now = Date.now();
+  if (until > now && until - now <= GAP + 5000) showWait(until); else openApp();
+})();
+</script>
+</body>
+</html>
